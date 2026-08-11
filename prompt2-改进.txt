@@ -1,0 +1,246 @@
+
+你现在需要将下面这个“小说广告清理工具”从 Tkinter 重写为 PyQt5 版本，同时实现以下三大优化。
+
+原始 Tkinter 代码的功能描述与关键逻辑如下（已附在提示词末尾），请基于它进行改进，但 UI 全部用 PyQt5 重写。
+
+---
+
+## 一、新工具必须实现的三大优化
+
+### 1. 现代化 GUI（PyQt5）
+- 使用 PyQt5 构建界面，窗口大小默认 800×400，最低 700×350。
+- 整体风格现代（例如使用 Fusion 风格，通过 `QApplication.setStyle("Fusion")` 开启）。
+- 所有控件字体清晰，采用系统默认中文字体，字号适当（如 10pt）。
+- 窗口布局如下：
+  - **第 1 行**：文件选择（标签 + 只读 QLineEdit + “浏览”按钮）。
+  - **第 2 行**：检索词输入（标签 + QLineEdit + “检索”按钮）。
+  - **第 3 行**：输出目录选择（标签 + QLineEdit + “浏览”按钮）。默认显示为空，提示用户选择；选中后路径显示在该行。
+  - **第 4 行**：“删除广告”按钮（大号，突出显示）。
+  - **状态栏**：底部 QTextEdit（只读，高度 4 行）用于日志输出。
+- 所有按钮增加适当内边距，整体美观。
+
+### 2. 支持手动编辑“检索结果.txt”后再删除
+原始工具在检索后生成桌面上的“检索结果.txt”，用户可能看到误判的句子。新工具允许用户：
+- 手动打开“检索结果.txt”进行编辑（删除不需要删除的行、或修改文本）。
+- 编辑完成后，点击“删除广告”按钮时，**程序重新读取该文件**，并根据文件中**保留的有效行**来决定删除哪些句子。
+
+具体实现：
+- 检索时，除了生成 `检索结果.txt`，还需在内存中保存一个字典 `index_map`：**{序号: 句子在原始句子列表中的索引}**。序号从 1 开始，与文件中 `[序号]` 对应。
+- `检索结果.txt` 格式保持为每行 `[序号] 广告句内容`，最后一行是 `共找到 N 条广告句`。
+- 删除时，读取 `检索结果.txt`，解析每一行：
+  - 跳过空行、以“共找到”开头的总结行，以及无法解析出 `[数字]` 的行。
+  - 提取出所有序号（整数）。
+  - 根据序号从 `index_map` 获取原始句子索引列表，作为实际要删除的句子。
+- 如果用户删除了某行，则该序号不会出现在文件中，该句子就不会被删除；如果用户修改了内容，只要序号还在，就依然删除对应的原始句子（即便内容已变，删除依据是序号，而不是内容匹配，这样最稳健）。
+- 最后进行删除操作（删除原句子列表中对应索引的句子）。
+- **注意**：如果 `检索结果.txt` 被删改后一个序号都没有，则提示“检索结果文件中未找到有效广告句，无需删除”。
+
+### 3. 输出文件路径自定义
+- **删除覆盖原文件的功能、备份功能**，改为：用户必须选择一个**输出目录**，程序在该目录下生成 `原文件名去广告.txt`。
+- 界面第 3 行即为输出目录选择。点击“浏览”按钮打开文件夹选择对话框，选中后在 QLineEdit 显示路径。
+- 点击“删除广告”前，如果输出目录为空，则弹出提示“请先选择输出目录”，阻止删除。
+- 输出文件命名为：`原文件名去广告.txt`（保留原扩展名 `.txt`，例如 `小说.txt` → `小说去广告.txt`）。如果输出目录下已存在同名文件，弹出确认框询问是否覆盖。
+
+---
+
+## 二、核心业务逻辑（需完整迁移并保留）
+以下逻辑原 Tkinter 代码已实现（但需改为 PyQt5 框架），必须保持功能一致：
+
+- **检索表达式解析**：支持 `AND` 和 `OR`，规则完全不变（以 ` OR ` 分割组，组内 ` AND ` 分割词，一个句子只要满足任一与组所有词即匹配）。
+- **句子边界**：使用正则 `(?<=[。！？!?\n])` 拆分，分隔符保留在句末。
+- **文件编码**：依次尝试 `utf-8-sig`、`gbk`、`gb18030` 打开。
+- **检索结果输出**：生成 `检索结果.txt` 到桌面（带 BOM 的 UTF-8）。
+- **删除逻辑**：丢弃被标记的句子元素，其余拼接。
+
+此外，需要适配 PyQt5 的多线程（避免界面卡顿）。由于文件读取和检索极快，可以不使用多线程，但需调用 `QApplication.processEvents()` 在长循环中更新 UI。
+
+---
+
+## 三、代码要求
+- 生成一个完整的 `.py` 文件，包含 `if __name__ == "__main__":` 入口。
+- 所有注释清晰，函数名保持语义。
+- 必须在文件开头添加注释说明运行环境：
+  ```
+  # 运行前请安装 PyQt5：pip install PyQt5
+  # 或使用虚拟环境：python -m venv venv → venv\Scripts\activate → pip install PyQt5
+  ```
+- 尽量保持与原始代码的函数拆分结构，方便对比。
+- 最终程序可在 Windows 下直接双击运行（依赖 PyQt5 已安装）。
+
+---
+
+## 四、原始 Tkinter 代码（供参考）
+```python
+# -*- coding: utf-8 -*-
+import os
+import re
+import shutil
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+SENTENCE_BOUNDARY = re.compile(r'(?<=[。！？!?\n])')
+ENCODINGS = ('utf-8-sig', 'gbk', 'gb18030')
+
+def parse_query(query):
+    def build_group_matcher(group):
+        words = [w for w in group.split(' AND ') if w]
+        return lambda sent: all(w in sent for w in words)
+    or_groups = [g for g in query.split(' OR ') if g.strip()]
+    group_matchers = [build_group_matcher(g) for g in or_groups]
+    return lambda sentence: any(m(sentence) for m in group_matchers)
+
+def read_text(path):
+    last_error = None
+    for encoding in ENCODINGS:
+        try:
+            with open(path, 'r', encoding=encoding) as f:
+                return f.read(), encoding
+        except UnicodeDecodeError as e:
+            last_error = e
+    raise last_error
+
+def write_text(path, content):
+    with open(path, 'w', encoding='utf-8-sig') as f:
+        f.write(content)
+
+def get_desktop_dir():
+    desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+    return desktop if os.path.isdir(desktop) else os.path.expanduser('~')
+
+class AdCleanerApp:
+    def __init__(self, root):
+        self.root = root
+        root.title("小说广告清理工具")
+        root.geometry("680x280")
+        root.minsize(560, 240)
+        self.file_var = tk.StringVar()
+        self.query_var = tk.StringVar()
+        self.overwrite_var = tk.BooleanVar(value=False)
+        self.sentences = None
+        self.matched_idx = None
+        self.matched_count = 0
+        self.source_path = None
+        self._build_ui()
+
+    def _build_ui(self):
+        file_frame = tk.Frame(self.root)
+        file_frame.pack(fill=tk.X, padx=10, pady=(10,5))
+        tk.Label(file_frame, text="文件：").pack(side=tk.LEFT)
+        self.file_entry = tk.Entry(file_frame, textvariable=self.file_var, state="readonly")
+        self.file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        tk.Button(file_frame, text="浏览", command=self.choose_file).pack(side=tk.LEFT)
+
+        query_frame = tk.Frame(self.root)
+        query_frame.pack(fill=tk.X, padx=10, pady=5)
+        tk.Label(query_frame, text="检索词：").pack(side=tk.LEFT)
+        self.query_entry = tk.Entry(query_frame, textvariable=self.query_var, width=50)
+        self.query_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        tk.Button(query_frame, text="检索", command=self.do_search).pack(side=tk.LEFT)
+
+        action_frame = tk.Frame(self.root)
+        action_frame.pack(fill=tk.X, padx=10, pady=5)
+        tk.Button(action_frame, text="删除广告", command=self.do_delete).pack(side=tk.LEFT)
+        tk.Checkbutton(
+            action_frame, text="覆盖原文件（自动备份 .bak）",
+            variable=self.overwrite_var,
+        ).pack(side=tk.LEFT, padx=10)
+
+        self.status_text = tk.Text(self.root, height=3, state="disabled", wrap="word")
+        self.status_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=(5,10))
+        self.log("就绪。请选择小说文件并输入检索词。")
+
+    def log(self, msg):
+        self.status_text.config(state="normal")
+        self.status_text.insert(tk.END, msg + "\n")
+        self.status_text.see(tk.END)
+        self.status_text.config(state="disabled")
+        self.root.update()
+
+    def choose_file(self):
+        path = filedialog.askopenfilename(filetypes=[("TXT 文件", "*.txt"), ("所有文件", "*.*")])
+        if path:
+            self.file_var.set(path)
+            self.log("已选择文件：" + path)
+
+    def do_search(self):
+        path = self.file_var.get().strip()
+        query = self.query_var.get().strip()
+        if not path:
+            messagebox.showerror("错误", "请先选择 TXT 文件。")
+            return
+        if not query:
+            messagebox.showerror("错误", "请输入检索词。")
+            return
+        self.log("正在读取文件...")
+        try:
+            text, encoding = read_text(path)
+        except Exception:
+            messagebox.showerror("错误", "文件读取失败或编码无法识别。")
+            return
+        self.log("文件读取成功（编码 %s，共 %d 个字符）" % (encoding, len(text)))
+        matcher = parse_query(query)
+        sentences = SENTENCE_BOUNDARY.split(text)
+        self.log("正在检索...")
+        matched = [i for i, s in enumerate(sentences) if matcher(s)]
+        if not matched:
+            messagebox.showerror("提示", "未找到匹配的广告句。")
+            return
+        desktop = get_desktop_dir()
+        result_path = os.path.join(desktop, "检索结果.txt")
+        self.log("正在保存检索结果...")
+        try:
+            lines = ["[%d] %s" % (idx + 1, sentences[i]) for idx, i in enumerate(matched)]
+            lines.append("共找到 %d 条广告句" % len(matched))
+            write_text(result_path, "\n".join(lines))
+        except Exception as e:
+            messagebox.showerror("错误", "写入检索结果失败：%s" % e)
+            return
+        self.sentences = sentences
+        self.matched_idx = set(matched)
+        self.matched_count = len(matched)
+        self.source_path = path
+        self.log("检索完成，共找到 %d 个广告句，结果已保存至桌面检索结果.txt" % self.matched_count)
+
+    def do_delete(self):
+        if self.matched_idx is None:
+            messagebox.showerror("错误", "请先执行“检索”。")
+            return
+        if not messagebox.askyesno("确认", "即将删除 %d 句广告，是否继续？" % self.matched_count):
+            self.log("已取消删除。")
+            return
+        kept = [s for i, s in enumerate(self.sentences) if i not in self.matched_idx]
+        cleaned = "".join(kept)
+        base, ext = os.path.splitext(self.source_path)
+        try:
+            self.log("正在保存...")
+            if self.overwrite_var.get():
+                bak_path = base + ".bak"
+                shutil.copy2(self.source_path, bak_path)
+                self.log("备份完成：%s" % bak_path)
+                write_text(self.source_path, cleaned)
+                save_path = self.source_path
+            else:
+                save_path = base + "_clean" + ext
+                write_text(save_path, cleaned)
+        except Exception as e:
+            messagebox.showerror("错误", "保存失败：%s" % e)
+            return
+        self.sentences = None
+        self.matched_idx = None
+        self.matched_count = 0
+        self.source_path = None
+        self.log("删除完成，文件已保存至 %s" % save_path)
+        self.log("已清空匹配缓存，可重新检索。")
+
+def main():
+    root = tk.Tk()
+    AdCleanerApp(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+请严格按照以上要求，输出完整的 PyQt5 版本代码。
