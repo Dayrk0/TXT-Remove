@@ -23,7 +23,7 @@
 三、开发对话与分享链接
 ---------------
 本次 VibeCoding 全程与 DeepSeek AI 对话完成，对话记录可查看：
-https://chat.deepseek.com/share/c8ezmef8fkjd2r0lzy
+https://chat.deepseek.com/share/xbvp80p55r0sdas8we
 
 四、环境与依赖
 ---------------
