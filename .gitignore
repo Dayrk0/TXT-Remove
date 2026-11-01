@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.log
+
+# 本地虚拟环境
+qt_env/
+.venv/
+
+# 大体积原始样本（已处理成品仍保留在仓库中）
+小说原文/
+
+# 测试临时文件
+tests/_tmp/
+tests/_runtime_e2e/
+tests/_test_*/
+.pytest_cache/
+
+# 打包产物
+build/
+dist/
+*.spec
+*.exe
+_MEI*/
+tests/_exe*/
+
+# 临时截图与编辑器目录
+docs/screenshots/_*.png
+.idea/
+.vscode/
