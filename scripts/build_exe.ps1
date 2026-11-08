@@ -4,10 +4,10 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
 if (-not (Test-Path "assets\app.ico")) {
-    throw "ç¼ºå°‘ assets\app.ico"
+    throw "È±ÉÙ assets\app.ico"
 }
 if (-not (Test-Path "assets\version_info.txt")) {
-    throw "ç¼ºå°‘ assets\version_info.txt"
+    throw "È±ÉÙ assets\version_info.txt"
 }
 
 python -m PyInstaller `
@@ -15,13 +15,13 @@ python -m PyInstaller `
     --clean `
     --onefile `
     --windowed `
-    --name "å°è¯´å¹¿å‘Šæ¸…ç†å·¥å…·" `
+    --name "Ğ¡Ëµ¹ã¸æÇåÀí¹¤¾ß" `
     --icon "$root\assets\app.ico" `
     --version-file "$root\assets\version_info.txt" `
     --runtime-tmpdir "." `
     --distpath $root `
     --workpath "$root\build\pyinstaller" `
     --specpath "$root\build" `
-    "$root\å°è¯´å¹¿å‘Šæ¸…ç†å·¥å…·.py"
+    "$root\Ğ¡Ëµ¹ã¸æÇåÀí¹¤¾ß.py"
 
-Write-Host "æ„å»ºå®Œæˆï¼š$root\å°è¯´å¹¿å‘Šæ¸…ç†å·¥å…·.exe"
+Write-Host "¹¹½¨Íê³É£º$root\Ğ¡Ëµ¹ã¸æÇåÀí¹¤¾ß.exe"
